@@ -124,9 +124,12 @@ def normalize_manifest_list(value: Union[List[str], str, None]) -> List[str]:
 
 def compute_sha256(file_path: Path) -> str:
     hash_obj = hashlib.sha256()
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 64), b""):
-            hash_obj.update(chunk)
+    try:
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 64), b""):
+                hash_obj.update(chunk)
+    except OSError:
+        return ""
     return hash_obj.hexdigest()
 
 

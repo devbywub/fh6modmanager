@@ -5,6 +5,7 @@ import sys
 import tempfile
 import tkinter as tk
 import urllib.request
+import urllib.error
 import zipfile
 import ssl
 from datetime import datetime
@@ -56,7 +57,7 @@ class ModManagerGUI:
         self.download_max_bytes = 200 * 1024 * 1024
         self.zip_max_bytes = 500 * 1024 * 1024
         self.zip_max_files = 20000
-        self.zip_max_ratio = 100
+        self.zip_max_ratio = 500
 
         # Initialize folders setup
         self.first_run = False
@@ -1145,7 +1146,7 @@ class ModManagerGUI:
         return ""
 
     def fetch_json_with_limits(self, url: str, max_bytes: int):
-        context = ssl.create_default_context()
+        context = self.create_ssl_context()
         with urllib.request.urlopen(url, timeout=15, context=context) as response:
             length = response.headers.get("Content-Length")
             try:
@@ -1160,7 +1161,7 @@ class ModManagerGUI:
             return json.loads(payload.decode("utf-8"))
 
     def download_with_limits(self, url: str, dest: Path, max_bytes: int):
-        context = ssl.create_default_context()
+        context = self.create_ssl_context()
         with urllib.request.urlopen(url, timeout=20, context=context) as response:
             length = response.headers.get("Content-Length")
             try:
@@ -1189,8 +1190,6 @@ class ModManagerGUI:
             total_size += info.file_size
             if total_size > self.zip_max_bytes:
                 raise ValueError("Archive is too large to extract safely.")
-            if info.compress_size == 0 and info.file_size > 0:
-                raise ValueError("Archive compression ratio is suspiciously high.")
             if info.compress_size:
                 ratio = info.file_size / info.compress_size
                 if ratio > self.zip_max_ratio:
@@ -1201,14 +1200,16 @@ class ModManagerGUI:
         for info in zip_ref.infolist():
             target_path = (dest / info.filename).resolve()
             try:
-                common_path = os.path.commonpath(
-                    [str(dest_path), str(target_path)]
-                )
+                target_path.relative_to(dest_path)
             except ValueError:
-                raise ValueError("Archive contains unsafe paths.") from None
-            if common_path != str(dest_path):
                 raise ValueError("Archive contains unsafe paths.")
         zip_ref.extractall(dest)
+
+    def create_ssl_context(self):
+        context = ssl.create_default_context()
+        context.check_hostname = True
+        context.verify_mode = ssl.CERT_REQUIRED
+        return context
 
     def show_catalog_window(self):
         if hasattr(self, "catalog_window") and self.catalog_window.winfo_exists():
@@ -1479,7 +1480,7 @@ class ModManagerGUI:
                     "install_catalog_mod",
                     {"name": entry.get("name"), "version": entry.get("version")},
                 )
-        except Exception as e:
+        except (OSError, ValueError, zipfile.BadZipFile, urllib.error.URLError) as e:
             if not silent:
                 messagebox.showerror("Catalog", f"Failed installing catalog mod: {e}")
 
