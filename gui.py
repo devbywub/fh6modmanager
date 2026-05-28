@@ -6,6 +6,7 @@ import tempfile
 import tkinter as tk
 import urllib.request
 import zipfile
+import ssl
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
@@ -1144,7 +1145,8 @@ class ModManagerGUI:
         return ""
 
     def fetch_json_with_limits(self, url: str, max_bytes: int):
-        with urllib.request.urlopen(url, timeout=15) as response:
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(url, timeout=15, context=context) as response:
             length = response.headers.get("Content-Length")
             try:
                 length_value = int(length) if length else None
@@ -1158,7 +1160,8 @@ class ModManagerGUI:
             return json.loads(payload.decode("utf-8"))
 
     def download_with_limits(self, url: str, dest: Path, max_bytes: int):
-        with urllib.request.urlopen(url, timeout=20) as response:
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(url, timeout=20, context=context) as response:
             length = response.headers.get("Content-Length")
             try:
                 length_value = int(length) if length else None
@@ -1186,14 +1189,24 @@ class ModManagerGUI:
             total_size += info.file_size
             if total_size > self.zip_max_bytes:
                 raise ValueError("Archive is too large to extract safely.")
-            if info.compress_size and info.file_size / info.compress_size > self.zip_max_ratio:
+            if info.compress_size == 0 and info.file_size > 0:
                 raise ValueError("Archive compression ratio is suspiciously high.")
+            if info.compress_size:
+                ratio = info.file_size / info.compress_size
+                if ratio > self.zip_max_ratio:
+                    raise ValueError("Archive compression ratio is suspiciously high.")
 
     def safe_extract_zip(self, zip_ref: zipfile.ZipFile, dest: Path):
         dest_path = dest.resolve()
         for info in zip_ref.infolist():
             target_path = (dest / info.filename).resolve()
-            if os.path.commonpath([str(dest_path), str(target_path)]) != str(dest_path):
+            try:
+                common_path = os.path.commonpath(
+                    [str(dest_path), str(target_path)]
+                )
+            except ValueError:
+                raise ValueError("Archive contains unsafe paths.") from None
+            if common_path != str(dest_path):
                 raise ValueError("Archive contains unsafe paths.")
         zip_ref.extractall(dest)
 
