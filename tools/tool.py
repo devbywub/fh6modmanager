@@ -172,7 +172,7 @@ def normalize_version(value: str) -> Tuple[int, ...]:
     if not value:
         return tuple()
     parts = re.split(r"[^\d]+", value)
-    numbers = [int(part) for part in parts if part.isdigit()]
+    numbers = [int(part) for part in parts if part]
     return tuple(numbers)
 
 

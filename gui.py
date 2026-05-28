@@ -13,6 +13,13 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 from urllib.parse import urlparse
 
+# Security and size limits
+CATALOG_MAX_BYTES = 5 * 1024 * 1024
+DOWNLOAD_MAX_BYTES = 200 * 1024 * 1024
+ZIP_MAX_BYTES = 500 * 1024 * 1024
+ZIP_MAX_FILES = 20000
+ZIP_MAX_RATIO = 500
+
 # Import backend methods
 from tools.tool import (
     build_mod_file_index,
@@ -53,11 +60,11 @@ class ModManagerGUI:
         self.log_file = self.logs_dir / "actions.log"
         self.catalog_file = self.base_dir / "catalog_cache.json"
         self.catalog_entries = []
-        self.catalog_max_bytes = 5 * 1024 * 1024
-        self.download_max_bytes = 200 * 1024 * 1024
-        self.zip_max_bytes = 500 * 1024 * 1024
-        self.zip_max_files = 20000
-        self.zip_max_ratio = 500
+        self.catalog_max_bytes = CATALOG_MAX_BYTES
+        self.download_max_bytes = DOWNLOAD_MAX_BYTES
+        self.zip_max_bytes = ZIP_MAX_BYTES
+        self.zip_max_files = ZIP_MAX_FILES
+        self.zip_max_ratio = ZIP_MAX_RATIO
 
         # Initialize folders setup
         self.first_run = False
@@ -804,7 +811,7 @@ class ModManagerGUI:
         self.root.update()
 
     def finish_progress(self, window):
-        if window and window.winfo_exists():
+        if window is not None and window.winfo_exists():
             window.destroy()
 
     def detect_mod_conflicts(self, mod_id: str, file_index: list) -> str:
@@ -1190,7 +1197,7 @@ class ModManagerGUI:
             total_size += info.file_size
             if total_size > self.zip_max_bytes:
                 raise ValueError("Archive is too large to extract safely.")
-            if info.compress_size:
+            if info.compress_size > 0:
                 ratio = info.file_size / info.compress_size
                 if ratio > self.zip_max_ratio:
                     raise ValueError("Archive compression ratio is suspiciously high.")
