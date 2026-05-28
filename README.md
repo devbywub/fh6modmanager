@@ -42,3 +42,37 @@ The manager uses a central working directory to store logs, settings, baseline C
 └── replacedmainfiles/
     └── <mod_id>/
         └── originals/                  <-- Dynamic backups of original overwritten game files
+```
+## ⚠️ LEGAL DISCLAIMER & TERMS OF USE
+
+**BY DOWNLOADING, RUNNING, OR USING THIS SOFTWARE (FORZA HORIZON 6 MOD MANAGER / FH6MM), YOU AGREE TO THE FOLLOWING TERMS. IF YOU DO NOT AGREE, DELETE THIS SOFTWARE IMMEDIATELY.**
+
+### 1. No Affiliation or Corporate Endorsement
+This software is an unofficial, community-developed, open-source utility. It is **NOT** affiliated with, authorized, maintained, sponsored, or endorsed by:
+* **Microsoft Corporation**
+* **Playground Games**
+* **Turn 10 Studios**
+* **Xbox Game Studios**
+* Or any of their parent companies, subsidiaries, or affiliates. 
+
+All product names, logos, brands, trademarks, and registered trademarks (including "Forza Horizon", "Forza Horizon 6", "Playground Games", and associated media) are properties of their respective owners. Their use in this project does not imply endorsement or ownership.
+
+### 2. Risk of Account Suspension & Multi-Player Bans
+Modifying game files of any title published by Xbox Game Studios is a direct violation of the **Microsoft Services Agreement**, **Xbox Game Studios Terms of Use**, and the **Forza Code of Conduct**. 
+* Using this software to apply modifications may result in anti-cheat detection systems flagging your game instance.
+* This can lead to punitive actions, including but not limited to: **permanent account bans, suspension of multiplayer match access, deletion of leaderboard rankings, console hardware bans, or Steam/Xbox profile restrictions.**
+* **The developer of this software takes ZERO responsibility** for any actions taken against your accounts, hardware, or profiles by Microsoft, Playground Games, Valve (Steam), or Xbox Live. **YOU MOD AT YOUR OWN RISK.**
+
+### 3. "AS-IS" Warranty & Software Disclaimer
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. 
+
+IN NO EVENT SHALL THE AUTHORS, DEVELOPERS, OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### 4. Technical and Data Risks
+While this tool includes automatic backup scripts, file operations carry inherent risks. The developer is **not liable** for:
+* Loss of game progress, corrupted save files, or corrupted game installations.
+* System operating failures, hardware damage, or blue screens (BSODs) resulting from file read/write permissions issues.
+* The content, stability, or potential malware hidden inside external third-party mods you choose to import using this tool.
+
+### 5. Indemnification
+By using this software, you agree to defend, indemnify, and hold harmless the developer(s) of this project from and against any and all claims, damages, obligations, losses, liabilities, costs, debts, and expenses (including but not limited to attorney's fees) arising from your use of the software, your violation of these terms, or your violation of any third-party rights (such as Microsoft's EULA).
