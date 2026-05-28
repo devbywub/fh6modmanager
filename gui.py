@@ -9,6 +9,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
+from urllib.parse import urlparse
 
 # Import backend methods
 from tools.tool import (
@@ -50,6 +51,11 @@ class ModManagerGUI:
         self.log_file = self.logs_dir / "actions.log"
         self.catalog_file = self.base_dir / "catalog_cache.json"
         self.catalog_entries = []
+        self.catalog_max_bytes = 5 * 1024 * 1024
+        self.download_max_bytes = 200 * 1024 * 1024
+        self.zip_max_bytes = 500 * 1024 * 1024
+        self.zip_max_files = 20000
+        self.zip_max_ratio = 100
 
         # Initialize folders setup
         self.first_run = False
@@ -1131,6 +1137,66 @@ class ModManagerGUI:
         text.insert("end", content)
         text.config(state="disabled")
 
+    def validate_https_url(self, url: str) -> str:
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or not parsed.netloc:
+            return "Only valid https:// URLs are allowed."
+        return ""
+
+    def fetch_json_with_limits(self, url: str, max_bytes: int):
+        with urllib.request.urlopen(url, timeout=15) as response:
+            length = response.headers.get("Content-Length")
+            try:
+                length_value = int(length) if length else None
+            except ValueError:
+                length_value = None
+            if length_value and length_value > max_bytes:
+                raise ValueError("Remote payload exceeds size limit.")
+            payload = response.read(max_bytes + 1)
+            if len(payload) > max_bytes:
+                raise ValueError("Remote payload exceeds size limit.")
+            return json.loads(payload.decode("utf-8"))
+
+    def download_with_limits(self, url: str, dest: Path, max_bytes: int):
+        with urllib.request.urlopen(url, timeout=20) as response:
+            length = response.headers.get("Content-Length")
+            try:
+                length_value = int(length) if length else None
+            except ValueError:
+                length_value = None
+            if length_value and length_value > max_bytes:
+                raise ValueError("Download exceeds allowed size.")
+            total = 0
+            with open(dest, "wb") as f:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > max_bytes:
+                        raise ValueError("Download exceeds allowed size.")
+                    f.write(chunk)
+
+    def validate_zip_safety(self, zip_ref: zipfile.ZipFile):
+        infos = zip_ref.infolist()
+        if len(infos) > self.zip_max_files:
+            raise ValueError("Archive contains too many files.")
+        total_size = 0
+        for info in infos:
+            total_size += info.file_size
+            if total_size > self.zip_max_bytes:
+                raise ValueError("Archive is too large to extract safely.")
+            if info.compress_size and info.file_size / info.compress_size > self.zip_max_ratio:
+                raise ValueError("Archive compression ratio is suspiciously high.")
+
+    def safe_extract_zip(self, zip_ref: zipfile.ZipFile, dest: Path):
+        dest_path = dest.resolve()
+        for info in zip_ref.infolist():
+            target_path = (dest / info.filename).resolve()
+            if os.path.commonpath([str(dest_path), str(target_path)]) != str(dest_path):
+                raise ValueError("Archive contains unsafe paths.")
+        zip_ref.extractall(dest)
+
     def show_catalog_window(self):
         if hasattr(self, "catalog_window") and self.catalog_window.winfo_exists():
             self.catalog_window.lift()
@@ -1212,6 +1278,10 @@ class ModManagerGUI:
         if not url:
             messagebox.showerror("Catalog", "Please provide a catalog URL.")
             return
+        url_error = self.validate_https_url(url)
+        if url_error:
+            messagebox.showerror("Catalog", url_error)
+            return
         try:
             entries = self.fetch_catalog_entries(url)
         except Exception as e:
@@ -1234,8 +1304,7 @@ class ModManagerGUI:
             self.update_all_catalog_updates(auto_triggered=True)
 
     def fetch_catalog_entries(self, url: str):
-        with urllib.request.urlopen(url, timeout=15) as response:
-            data = json.load(response)
+        data = self.fetch_json_with_limits(url, self.catalog_max_bytes)
 
         entries = []
         if isinstance(data, dict):
@@ -1334,6 +1403,11 @@ class ModManagerGUI:
             if not silent:
                 messagebox.showerror("Catalog", "Selected entry has no download URL.")
             return
+        url_error = self.validate_https_url(download_url)
+        if url_error:
+            if not silent:
+                messagebox.showerror("Catalog", url_error)
+            return
 
         entry_id = entry.get("id") or entry.get("name") or ""
         existing_mods = self.find_mod_ids_by_reference(entry_id)
@@ -1349,7 +1423,9 @@ class ModManagerGUI:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
                 archive_path = temp_path / "mod_package"
-                urllib.request.urlretrieve(download_url, archive_path)
+                self.download_with_limits(
+                    download_url, archive_path, self.download_max_bytes
+                )
 
                 expected_hash = entry.get("sha256", "")
                 if expected_hash:
@@ -1371,7 +1447,8 @@ class ModManagerGUI:
                 extract_dir = temp_path / "extracted"
                 extract_dir.mkdir(parents=True, exist_ok=True)
                 with zipfile.ZipFile(archive_path, "r") as zip_ref:
-                    zip_ref.extractall(extract_dir)
+                    self.validate_zip_safety(zip_ref)
+                    self.safe_extract_zip(zip_ref, extract_dir)
 
                 mod_root = self.find_manifest_root(extract_dir)
                 if not mod_root:
@@ -1626,6 +1703,8 @@ class ModManagerGUI:
 
             if purge_backups and backup_origin_root.parent.exists():
                 shutil.rmtree(backup_origin_root.parent)
+                mod_info["backed_up_files_index"] = []
+                mod_info["backup_hashes"] = {}
 
             mod_info["enabled"] = False
             self.save_settings()
