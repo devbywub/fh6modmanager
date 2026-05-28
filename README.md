@@ -16,8 +16,24 @@ FH6MM establishes a **secure cryptographic-like baseline registry** of your unmo
 - **📦 Universal Manifest Integration:** Parses standardized, developer-friendly `manifest.json` files visually directly on the GUI.
 - **💾 Smart Backup & Overwrite Engine:** If a mod changes `/media/sound/radio.pck` or a simple `test.txt`, FH6MM clones the original to `/fh6mm/replacedmainfiles/<mod>/originals/` dynamically before applying modifications.
 - **🔄 Zero-Trace Disable & Cleanup:** Toggling a mod off automatically deletes mod-only additions, restores original game files, and runs directory sweeps to remove empty folders.
+- **⚔️ Conflict Detection & Priority:** Detects overlapping files between mods, shows priority, and blocks unsafe activations.
+- **🧩 Profiles:** Save and apply mod sets (Offline, Visual, Performance, etc.) with one click.
+- **🧷 Dependencies & Compatibility:** Supports dependencies, incompatibilities, and minimum game version checks.
+- **🛠️ Integrity & Repair Mode:** Hash-based integrity verification with automatic repair using backups.
+- **🧾 Audit Logs:** Full history of import/enable/rollback/delete actions with export support.
+- **🌐 Mod Catalog & Updates:** Remote catalog search, checksum validation, and update flow for installed mods.
+- **📊 UX Improvements:** Real activation progress bar and file replacement previews before applying.
 
 ---
+
+## 📜 Manifest Extensions
+
+Optional fields supported in `manifest.json`:
+
+- `id` or `mod_id` (stable identifier)
+- `dependencies` (list or comma-separated string)
+- `incompatibilities` (list or comma-separated string)
+- `min_game_version` (minimum game version required)
 
 ## 📂 System Storage Architecture
 
@@ -31,8 +47,11 @@ The manager uses a central working directory to store logs, settings, baseline C
 /fh6mm/
 │
 ├── settings.json                       <-- Global parameters & mod registry tracking
+├── logs/
+│   └── actions.log                      <-- Audit log history
 ├── backups/
 │   └── clean_manifest.csv              <-- Master list of unmodded baseline files
+├── catalog_cache.json                  <-- Cached remote catalog
 │
 ├── mods/                               <-- Isolated managed directory copies of imported mods
 │   └── <mod_id>/
@@ -43,6 +62,21 @@ The manager uses a central working directory to store logs, settings, baseline C
     └── <mod_id>/
         └── originals/                  <-- Dynamic backups of original overwritten game files
 ```
+
+## 📦 Packaging (Windows)
+
+Build a standalone executable with PyInstaller:
+
+```powershell
+.\build_windows.ps1
+```
+
+Create an installer with Inno Setup:
+
+```text
+installer.iss
+```
+
 ## ⚠️ LEGAL DISCLAIMER & TERMS OF USE
 
 **BY DOWNLOADING, RUNNING, OR USING THIS SOFTWARE (FORZA HORIZON 6 MOD MANAGER / FH6MM), YOU AGREE TO THE FOLLOWING TERMS. IF YOU DO NOT AGREE, DELETE THIS SOFTWARE IMMEDIATELY.**
